@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>上传文件</title>
+    <style>
+        .uploadFilePage {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .inputBox {
+            width: 320px;
+            height: 220px;
+            color: #228EFF;
+            font-size: 18px;
+            margin-top: 100px;
+            border: 1px dashed #228EFF;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .inputBox img {
+            width: 130px;
+            height: 130px;
+            margin-bottom: 15px;
+        }
+
+        .inputBox .tips {
+            font-size: 12px;
+            color: #666;
+            line-height: 30px;
+        }
+
+
+        .fileInput {
+            display: none;
+        }
+
+        .fileList {
+            line-height: 35px;
+            margin-top: 20px;
+        }
+
+        .fileList .fileOne {
+            display: flex;
+            align-items: center;
+        }
+
+        .fileList .deleteIconBox {
+            width: 50px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .fileList .deleteIconBox img {
+            width: 26px;
+            height: 26px;
+        }
+
+        .goBackBtn {
+            width: 120px;
+            height: 45px;
+            line-height: 45px;
+            text-align: center;
+            background-color: #228EFF;
+            border-radius: 6px;
+            color: #fff;
+            margin-top: 35px;
+        }
+
+        .alert {
+            position: fixed;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 10px;
+            background-color: #faa734;
+            color: #fff;
+            border-radius: 6px;
+        }
+    </style>
+    <!-- 微信 JS-SDK 如果不需要兼容小程序，则无需引用此 JS 文件。 -->
+    <script type="text/javascript" src="//res.wx.qq.com/open/js/jweixin-1.4.0.js"></script>
+    <!-- uni 的 SDK，必须引用。 -->
+    <script type="text/javascript" src="//js.cdn.aliyun.dcloud.net.cn/dev/uni-app/uni.webview.0.1.52.js"></script>
+    <!-- <script src="./vue.js"></script> -->
+    <script src="https://cdn.bootcdn.net/ajax/libs/vue/2.6.10/vue.min.js"></script>
+</head>
+
+<body>
+    <div class="uploadFilePage" id="app">
+        <div class="inputBox" @click="makeFileInputClick">
+            <!-- <img src="./image/uploadIcon.png" alt=""> -->
+            <div class="text">点击上传</div>
+            <div class="tips">* 文件大小限制为10MB</div>
+            <input type="file" class="fileInput" name="222" @change="chooseFile" ref="fileInput">
+        </div>
+        <div class="fileList">
+            <div v-for="(item, index) in filesList.basicData" :key="index" class="fileOne">{{item.name}} 上传成功 <div
+                    class="deleteIconBox" @click="deleteFile(index)">
+                    <!-- <img src="./image/deleteIcon.png" alt=""> -->
+                </div>
+            </div>
+        </div>
+        <div @click="goBack" class="goBackBtn">完成</div>
+        <div class="alert" v-show="isShowAlert">文件大小超过限制，请重新上传</div>
+    </div>
+
+    <script>
+        console.log(Vue);
+        new Vue({
+            el: '#app',
+            data: {
+                filesList: {
+                    basicData: [],  // 原始数据
+                    handledData: []  // 转化为base64的数据
+                },
+                isShowAlert: false
+            },
+            methods: {
+                makeFileInputClick() {
+                    this.$refs.fileInput.click()
+                },
+                // 文件转base64
+                fileToBase64(file) {
+                    return new Promise(function (resolve, reject) {
+                        var reader = new FileReader();
+                        reader.readAsDataURL(file);
+                        reader.onload = function () {
+                            typeof reader.result === 'string' && resolve(reader.result) || reject();
+                        };
+                        reader.onerror = function (error) { return reject(error); };
+                    });
+                },
+                async chooseFile(e) {
+                    let fileList = this.$refs.fileInput.files
+                    for (const item of fileList) {
+                    	// 限制文件大小
+                        if (item.size / 1024 / 1024 > 10) {
+                            this.isShowAlert = true;
+                            setTimeout(() => {
+                                this.isShowAlert = false;
+                            }, 2500)
+                            return
+                        }
+                        this.filesList.basicData.push(item);
+                        this.filesList.handledData.push({ name: item.name, file: await this.fileToBase64(item) });
+                    }
+
+                },
+                deleteFile(index) {
+                    this.filesList.basicData.splice(index, 1)
+                    this.filesList.handledData.splice(index, 1)
+                },
+                goBack() {
+                    uni.postMessage({
+                        data: JSON.stringify(this.filesList.handledData)
+                    });
+                    uni.navigateBack()
+                }
+            }
+        })
+    </script>
+</body>
+
+</html>
